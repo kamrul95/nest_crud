@@ -31,7 +31,23 @@ async signUp(AuthDto: AuthDto) {
         }
     }
 }
-signIn() {
-    return {msg: 'I am signed in'};
+async signIn(AuthDto: AuthDto) {
+    //find user
+    const user = await this.prisma.user.findUnique({
+        where: {
+            email: AuthDto.email,
+        }
+    });
+
+    // throw error if user is not found
+    if(!user) throw new ForbiddenException('Credentials not matched');
+
+    // verify password
+    const matchPass = await argon.verify(user.hash, AuthDto.password);
+    // throw exception if credentials not match
+    if (!matchPass) throw new ForbiddenException('Credentials not matched');
+
+    delete user.hash;
+    return user;
 }
 }
